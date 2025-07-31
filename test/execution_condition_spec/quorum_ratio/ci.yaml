@@ -1,0 +1,65 @@
+variables:
+  REPO_URI: { tpl: 'env.TEST_REPO_URI' }
+  REPO_REF: main
+pipelines:
+  # quorum base: 3 success, 1 failure, 1 skipped (used by quorum gates)
+  - name: q1
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: q2
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: q3
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: q4_fail
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ "exit 1" ] } ]
+  - name: q5_skipped
+    condition: 'never'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  # quorum gates
+  - name: quorum_at_least_2
+    needs: [ q1, q2, q3, q4_fail, q5_skipped ]
+    condition: '(needs_count(ok) >= 2)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: quorum_exact_3
+    needs: [ q1, q2, q3, q4_fail, q5_skipped ]
+    condition: '(needs_count(ok) == 3)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: quorum_at_most_2
+    needs: [ q1, q2, q3, q4_fail, q5_skipped ]
+    condition: '(needs_count(ok) <= 2)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  # ratio base: 4/5 success => 0.8 (used by ratio_ge_80)
+  - name: r1
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: r2
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: r3
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: r4
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: r5_fail
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ "exit 1" ] } ]
+  # ratio gate
+  - name: ratio_ge_80
+    needs: [ r1, r2, r3, r4, r5_fail ]
+    variables:
+      NUM_THRESHOLD: "0.8"
+    condition: 'needs_ratio(ok) >= ($vars.NUM_THRESHOLD | tonumber)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: ratio_empty_needs
+    condition: '(needs_total == 0) and (needs_ratio(ok) == 1)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]

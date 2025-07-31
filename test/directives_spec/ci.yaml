@@ -1,0 +1,249 @@
+variables:
+  ENV: "production"
+  WORKSPACES_ROOT: "/opt/ci/workspaces"
+
+  BASE_REPO_URI: "file:///srv/git"
+  DEFAULT_BRANCH: "main"
+  FETCH_DEPTH_STR: "2"
+
+  CPU_LIMIT_STR: "0.75"
+  CPU_WEIGHT_STR: "0.02"
+  MEM_LIMIT: "1536M"
+  MEM_THROTTLE: "1024M"
+
+  TIMEOUT_DURATION: "5m"
+  TIMEOUT_GRACE: "10s"
+
+  RUN_UID: "1000"
+  RUN_GID: "cigroup"
+
+  PIPE_A_NAME: "alpha"
+  PIPE_B_NAME: "beta"
+  PIPE_A_REPO_NAME: "alpha"
+  PIPE_B_REPO_NAME: "beta"
+
+  TOKEN_FILE: "file:///foo/bar/token.txt"
+
+  REFSPEC:
+    tpl: '"refs/heads/" + $vars.DEFAULT_BRANCH'
+
+  MAX_CONCURRENT_PIPELINES: "6"
+  MAX_CONCURRENT_JOBS_PER_PIPELINE: "3"
+
+  # Only-src global variable (resolver returns file content as string)
+  SECRET_GLOBAL:
+    src: 'file://${TEST_RESOURCES_DIR}/global_secret.txt'
+
+  # src + tpl at global scope (parse JSON and extract a field)
+  FEATURE_FLAG:
+    src: 'file://${TEST_RESOURCES_DIR}/features.json'
+    tpl: 'fromjson | .global_feature // "off"'
+
+  # src with interpolation using $vars in jq string interpolation
+  GLOBAL_SETTINGS:
+    src: 'file://${TEST_RESOURCES_DIR}/settings/${DEFAULT_BRANCH}.txt'
+
+concurrency:
+  max_parallel_pipelines:
+    tpl: '$vars.MAX_CONCURRENT_PIPELINES | tonumber'
+  max_parallel_jobs_per_pipeline:
+    tpl: '$vars.MAX_CONCURRENT_JOBS_PER_PIPELINE | tonumber'
+
+pipelines:
+  - name:
+      tpl: '$vars.PIPE_A_NAME'
+    needs: [ ]
+    workspace_dir:
+      tpl: '$vars.WORKSPACES_ROOT + "/" + $vars.PIPE_A_NAME'
+    repository:
+      uri:
+        tpl: '$vars.BASE_REPO_URI + "/" + $vars.PIPE_A_REPO_NAME + ".git"'
+      ref:
+        tpl: '$vars.DEFAULT_BRANCH'
+      fetch_depth:
+        tpl: '$vars.FETCH_DEPTH_STR | tonumber'
+      sparse_paths:
+        - "src/"
+        - tpl: '"docs/" + "README.md"'
+    variables:
+      # Pipeline-level override of global ENV
+      ENV: "staging"
+
+      # src-only and src→tpl variables at pipeline scope
+      PIPELINE_TOKEN:
+        src: 'file://${TEST_RESOURCES_DIR}/pipeline_alpha_token.txt'
+      PIPELINE_JSON:
+        src: 'file://${TEST_RESOURCES_DIR}/pipeline_alpha.json'
+      PIPELINE_API_KEY:
+        src: 'file://${TEST_RESOURCES_DIR}/pipeline_alpha.json'
+        tpl: 'fromjson | .api_key'
+
+      # tpl-only using previously defined variable within same scope
+      PIPELINE_AUTH_HEADER:
+        tpl: '"Bearer " + $vars.PIPELINE_API_KEY'
+
+      URL_BASE: "https://example.local/alpha"
+      URL_HEADERS_ENDPOINT:
+        tpl: '$vars.URL_BASE + "/headers"'
+
+      # Chained definitions to test immediate availability within same scope
+      CHAIN1: "A"
+      CHAIN2:
+        tpl: '$vars.CHAIN1 + "-B"'
+      CHAIN3:
+        tpl: '$vars.CHAIN2 + "-C"'
+
+    jobs:
+      - name: "init"
+        variables:
+          # Job-level override of ENV
+          ENV: "dev"
+
+          PREV_JOB: "none"
+
+          # src-only and src→tpl at job scope
+          JOB_SETTINGS:
+            src: 'file://${TEST_RESOURCES_DIR}/alpha/job_init.json'
+          JOB_MODE:
+            src: 'file://${TEST_RESOURCES_DIR}/alpha/job_init.json'
+            tpl: 'fromjson | .mode'
+
+          # tpl uses higher-scope vars (global + pipeline)
+          JOB_TMP_DIR:
+            tpl: '$vars.WORKSPACES_ROOT + "/" + $vars.PIPE_A_NAME + "/tmp"'
+
+          # Chained availability inside job scope
+          JOB_CHAIN_A: "1"
+          JOB_CHAIN_B:
+            tpl: '$vars.JOB_CHAIN_A + "2"'
+          JOB_CHAIN_C:
+            tpl: '$vars.JOB_CHAIN_B + "3"'
+
+        restrictions:
+          timeout:
+            duration:
+              tpl: '$vars.TIMEOUT_DURATION'
+            termination_grace_period:
+              tpl: '$vars.TIMEOUT_GRACE'
+          memory:
+            limit:
+              tpl: '$vars.MEM_LIMIT'
+            throttle_mark:
+              tpl: '$vars.MEM_THROTTLE'
+          cpu:
+            limit:
+              tpl: '$vars.CPU_LIMIT_STR | tonumber'
+            weight:
+              tpl: '$vars.CPU_WEIGHT_STR | tonumber'
+          run_as:
+            user:
+              tpl: '$vars.RUN_UID | tonumber'
+            group:
+              tpl: '$vars.RUN_GID'
+            supplementary_groups:
+              src: 'file://${TEST_RESOURCES_DIR}/groups.json'
+              tpl: 'fromjson'
+            allow_privilege_escalation:
+              src: 'file://${TEST_RESOURCES_DIR}/true.txt'
+              tpl: 'fromjson'
+
+        steps:
+          - tpl: '"echo Init in " + $vars.ENV + " for " + $vars.PIPE_A_NAME'
+          - "printenv | sort"
+
+      - name:
+          tpl: '"build-" + $vars.ENV'     # uses pipeline ENV ("staging")
+        needs:
+          # Cannot see other jobs' variables; falls back to "init"
+          - tpl: '$vars.PREV_JOB | if . == "none" then "init" else . end'
+        variables:
+          PREV_JOB: "init"
+        steps:
+          - "make build"
+          - tpl: '"echo Using API " + $vars.PIPELINE_API_KEY'
+
+      - name: "test"
+        needs:
+          - tpl: '"build-" + $vars.ENV'
+        condition:
+          tpl: '"on_success"'
+        restrictions:
+          run_as:
+            user:
+              tpl: '$vars.RUN_UID | tonumber'
+            group:
+              tpl: 'null'     # explicit null via tpl to test oneOf null
+        steps:
+          # src→tpl feeding '.' into the jq program
+          - src: 'file://${TEST_RESOURCES_DIR}/alpha/testcases.json'
+            tpl: 'fromjson | .tests[0] | "run " + .'
+          - "make test"
+
+      - name: "deploy"
+        needs:
+          - tpl: '"build-" + $vars.ENV'
+          - "test"
+        condition:
+          tpl: '"manual"'
+        steps:
+          - tpl: '"echo Deploy to " + ($vars.ENV // "unknown")'
+
+  - name:
+      tpl: '$vars.PIPE_B_NAME'
+    needs:
+      # Pipeline-level needs via tpl from global variable
+      - tpl: '$vars.PIPE_A_NAME'
+    workspace_dir:
+      tpl: '$vars.WORKSPACES_ROOT + "/" + $vars.PIPE_B_NAME'
+    repository:
+      uri:
+        tpl: '$vars.BASE_REPO_URI + "/" + $vars.PIPE_B_REPO_NAME + ".git"'
+      ref: "develop"
+      sparse_paths:
+        - tpl: '"src/"'
+        - tpl: '"docs/" + "CHANGELOG.md"'
+    variables:
+      # Independent pipeline scope: must not see alpha’s pipeline variables
+      ENV: "production"
+      PIPELINE_TOKEN:
+        src: 'file://${TEST_RESOURCES_DIR}/pipeline_beta_token.txt'
+      BASE_URL: "https://example.local/beta"
+      HEADERS_URI:
+        tpl: '$vars.BASE_URL + "/headers"'
+    jobs:
+      - name:
+          tpl: '"compile-" + $vars.ENV'
+        steps:
+          - tpl: '"echo Compiling for " + $vars.PIPE_B_NAME'
+          - "npm ci"
+
+      - name: "lint"
+        needs:
+          - "compile-production"
+        steps:
+          - "npm run lint"
+
+      - name: "test"
+        needs:
+          - "compile-production"
+        steps:
+          - "npm test"
+
+      - name: "package"
+        needs:
+          - tpl: '"compile-production"'
+          - "lint"
+          - "test"
+        restrictions:
+          run_as:
+            user:
+              tpl: '$vars.RUN_UID | tonumber'
+            group:
+              tpl: 'null'
+            supplementary_groups:
+              tpl: 'null'
+            allow_privilege_escalation:
+              tpl: 'false'
+        steps:
+          - tpl: '"echo Packaging " + $vars.PIPE_B_NAME'
+          - "npm pack"

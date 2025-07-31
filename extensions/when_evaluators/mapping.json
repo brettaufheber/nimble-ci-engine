@@ -1,0 +1,43 @@
+{
+  "calendar.cron": [
+    "./extensions/when_evaluators/calendar_cron/.venv/bin/python",
+    "./extensions/when_evaluators/calendar_cron/app.py",
+    "${EXPRESSION}",
+    "${BASE_TIMESTAMP}",
+    "${TIMEZONE}",
+    "${JITTER}"
+  ],
+  "calendar.rrule": [
+    "./extensions/when_evaluators/calendar_rrule/.venv/bin/python",
+    "./extensions/when_evaluators/calendar_rrule/app.py",
+    "${EXPRESSION}",
+    "${BASE_TIMESTAMP}",
+    "${TIMEZONE}",
+    "${JITTER}"
+  ],
+  "calendar.systemd": [
+    "./extensions/when_evaluators/calendar_systemd/.venv/bin/python",
+    "./extensions/when_evaluators/calendar_systemd/app.py",
+    "${EXPRESSION}",
+    "${BASE_TIMESTAMP}",
+    "${TIMEZONE}",
+    "${JITTER}"
+  ],
+  "interval.fixed_rate": [
+    "./extensions/when_evaluators/interval_fixed_rate/.venv/bin/python",
+    "./extensions/when_evaluators/interval_fixed_rate/app.py",
+    "${EXPRESSION}",
+    "${BASE_TIMESTAMP}",
+    "${TIMEZONE}",
+    "${JITTER}"
+  ],
+  "interval.fixed_delay": [
+    "./extensions/when_evaluators/interval_fixed_delay/.venv/bin/python",
+    "./extensions/when_evaluators/interval_fixed_delay/app.py",
+    "${EXPRESSION}",
+    "${BASE_TIMESTAMP}",
+    "${TIMEZONE}",
+    "${JITTER}",
+    "${DURATION_MS}"
+  ]
+}

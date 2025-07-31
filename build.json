@@ -1,0 +1,15 @@
+{
+  "name": "NimbleCI",
+  "version": "1.0.0",
+  "description": "A lightweight CI Engine",
+  "repository": {
+    "type": "git",
+    "uri": [
+      "ssh://git@github.com:brettaufheber/nimble-ci-engine.git",
+      "https://github.com/brettaufheber/nimble-ci-engine.git"
+    ]
+  },
+  "license": {
+    "GPLv3": "https://www.gnu.org/licenses/gpl-3.0.txt"
+  }
+}

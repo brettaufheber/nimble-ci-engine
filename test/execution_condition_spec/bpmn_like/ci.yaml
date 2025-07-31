@@ -1,0 +1,74 @@
+variables:
+  REPO_URI: { tpl: 'env.TEST_REPO_URI' }
+  REPO_REF: main
+  FLAG_A: "true"
+  FLAG_B: "false"
+  FLAG_C: "true"
+pipelines:
+  - name: gate
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  # AND split/join
+  - name: and_a
+    needs: [ gate ]
+    condition: '$vars.FLAG_A | tobool'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: and_b
+    needs: [ gate ]
+    condition: '$vars.FLAG_C | tobool'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: and_join
+    needs: [ and_a, and_b ]
+    condition: 'needs_all(ok)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  # negative AND split/join
+  - name: and_b_fail
+    needs: [ gate ]
+    condition: '$vars.FLAG_C | tobool'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ 'exit 1' ] } ]
+  - name: and_join_neg
+    needs: [ and_a, and_b_fail ]
+    condition: 'needs_all(ok)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  # XOR split/join
+  - name: xor_a
+    needs: [ gate ]
+    condition: '$vars.FLAG_A | tobool'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: xor_b
+    needs: [ gate ]
+    condition: '$vars.FLAG_B | tobool'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: xor_join
+    needs: [ xor_a, xor_b ]
+    condition: 'needs_any(ok)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: xor_join_exact_one
+    needs: [ xor_a, xor_b ]
+    condition: 'needs_count(ok) == 1'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  # OR split/join (activation-aware)
+  - name: or_a
+    needs: [ gate ]
+    condition: '$vars.FLAG_A | tobool'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: or_b
+    needs: [ gate ]
+    condition: '$vars.FLAG_B | tobool'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: or_join
+    needs: [ or_a, or_b ]
+    condition: 'needs_all(done) and needs_any(active)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]

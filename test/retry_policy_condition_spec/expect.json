@@ -1,0 +1,66 @@
+{
+  "pipelines": {
+    "p_max1_attempt": "success",
+    "p_unconditional_three_times_ok": "success",
+    "p_unconditional_three_times_failure": "failure",
+    "p_unconditional_three_times_timeout": "timeout",
+    "p_one_failure_then_success": "success",
+    "p_one_timeout_then_success": "success",
+    "p_two_consecutive_successes": "success",
+    "p_two_failures_then_success": "success"
+  },
+  "jobs": {
+    "p_max1_attempt": {
+      "unnamed": [
+        "success"
+      ]
+    },
+    "p_unconditional_three_times_ok": {
+      "unnamed": [
+        "success",
+        "success",
+        "success"
+      ]
+    },
+    "p_unconditional_three_times_failure": {
+      "unnamed": [
+        "failure",
+        "failure",
+        "failure"
+      ]
+    },
+    "p_unconditional_three_times_timeout": {
+      "unnamed": [
+        "timeout",
+        "timeout",
+        "timeout"
+      ]
+    },
+    "p_one_failure_then_success": {
+      "unnamed": [
+        "failure",
+        "success"
+      ]
+    },
+    "p_one_timeout_then_success": {
+      "unnamed": [
+        "timeout",
+        "success"
+      ]
+    },
+    "p_two_consecutive_successes": {
+      "unnamed": [
+        "failure",
+        "success",
+        "success"
+      ]
+    },
+    "p_two_failures_then_success": {
+      "unnamed": [
+        "failure",
+        "failure",
+        "success"
+      ]
+    }
+  }
+}

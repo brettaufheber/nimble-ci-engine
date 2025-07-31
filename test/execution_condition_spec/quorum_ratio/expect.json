@@ -1,0 +1,19 @@
+{
+  "pipelines": {
+    "q1": "success",
+    "q2": "success",
+    "q3": "success",
+    "q4_fail": "failure",
+    "q5_skipped": "skipped",
+    "quorum_at_least_2": "success",
+    "quorum_exact_3": "success",
+    "quorum_at_most_2": "skipped",
+    "r1": "success",
+    "r2": "success",
+    "r3": "success",
+    "r4": "success",
+    "r5_fail": "failure",
+    "ratio_ge_80": "success",
+    "ratio_empty_needs": "success"
+  }
+}

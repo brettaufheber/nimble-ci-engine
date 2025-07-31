@@ -1,0 +1,62 @@
+user  appuser;
+worker_processes auto;
+
+pid /opt/app/run/nginx.pid;
+error_log /dev/stderr warn;
+access_log /dev/stdout;
+
+events {
+  worker_connections 1024;
+}
+
+http {
+  include /etc/nginx/mime.types;
+  default_type application/octet-stream;
+
+  sendfile on;
+  tcp_nopush on;
+  keepalive_timeout 65;
+  server_tokens off;
+  client_max_body_size 1m;
+
+  # security headers
+  add_header X-Content-Type-Options nosniff always;
+  add_header X-Frame-Options DENY always;
+  add_header Referrer-Policy no-referrer-when-downgrade always;
+  add_header Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline';" always;
+
+  server {
+    listen 8080 default_server;
+    server_name _;
+
+    root /opt/app/www;
+    index index.sh;
+
+    # liveness probe
+    location = /healthz {
+      add_header Content-Type text/plain always;
+      return 200 'ok';
+    }
+
+    # Static / app routing
+    location / {
+      try_files $uri $uri/ /index.sh?$args;
+    }
+
+    # Bash-CGI via fcgiwrap (UNIX socket)
+    location ~ \.sh$ {
+      include /etc/nginx/fastcgi_params;
+      fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+      fastcgi_param DOCUMENT_ROOT $document_root;
+      fastcgi_param SCRIPT_NAME $fastcgi_script_name;
+      fastcgi_param PATH_INFO $fastcgi_path_info;
+      fastcgi_pass unix:/opt/app/run/fcgiwrap.sock;
+    }
+
+    # handle hidden files as 404
+    location ~ /\. {
+      deny all;
+      return 404;
+    }
+  }
+}

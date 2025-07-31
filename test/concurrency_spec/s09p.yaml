@@ -1,0 +1,63 @@
+# Scenario S09-p — Overlapping diamonds DAG; using pipelines
+# Shape: A1 -> (B1, B2) -> C1, A2 -> (B2, B3) -> C2
+# Expectation:
+#   • A1 and A2 may run in parallel (roots).
+#   • B2 waits for BOTH A1 and A2; B1 waits for A1; B3 waits for A2.
+#   • C1 waits for B1 and B2; C2 waits for B2 and B3.
+
+variables:
+  MAX_CONCURRENT_PIPELINES: "0"
+  MAX_CONCURRENT_JOBS_PER_PIPELINE: "0"
+  TEST_COMMAND: { tpl: '"\(env.TEST_DIR)/concurrency_probe.sh"' }
+  INSTALL_DIR: { tpl: 'env.INSTALL_DIR' }
+  CI_CONFIG_FILE: { tpl: '"\(env.TEST_RESOURCES_DIR)/ci.yaml"' }
+  STATE_FILE: { tpl: 'env.STATE_FILE' }
+  JQ_MODULE_PATH: { tpl: 'env.JQ_MODULE_PATH' }
+  SCHEMA_BASE_URI: { tpl: 'env.SCHEMA_BASE_URI' }
+  SLEEP: "0.01"
+concurrency:
+  max_parallel_pipelines: { tpl: '$vars.MAX_CONCURRENT_PIPELINES | tonumber' }
+  max_parallel_jobs_per_pipeline: { tpl: '$vars.MAX_CONCURRENT_JOBS_PER_PIPELINE | tonumber' }
+pipelines:
+  - name: A1
+    needs: [ ]
+    jobs:
+      - name: A1
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: A2
+    needs: [ ]
+    jobs:
+      - name: A2
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: B1
+    needs: [ A1 ]
+    jobs:
+      - name: B1
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: B2
+    needs: [ A1, A2 ]
+    jobs:
+      - name: B2
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: B3
+    needs: [ A2 ]
+    jobs:
+      - name: B3
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: C1
+    needs: [ B1, B2 ]
+    jobs:
+      - name: C1
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: C2
+    needs: [ B2, B3 ]
+    jobs:
+      - name: C2
+        steps:
+          - tpl: '$vars.TEST_COMMAND'

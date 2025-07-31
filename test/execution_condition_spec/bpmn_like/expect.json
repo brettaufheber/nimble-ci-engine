@@ -1,0 +1,17 @@
+{
+  "pipelines": {
+    "gate": "success",
+    "and_a": "success",
+    "and_b": "success",
+    "and_join": "success",
+    "and_b_fail": "failure",
+    "and_join_neg": "skipped",
+    "xor_a": "success",
+    "xor_b": "skipped",
+    "xor_join": "success",
+    "xor_join_exact_one": "success",
+    "or_a": "success",
+    "or_b": "skipped",
+    "or_join": "success"
+  }
+}

@@ -1,0 +1,534 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CI Config Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "variables": {
+      "$ref": "#/definitions/variables"
+    },
+    "concurrency": {
+      "$ref": "#/definitions/concurrency"
+    },
+    "pipelines": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/pipeline"
+      }
+    }
+  },
+  "required": [
+    "pipelines"
+  ],
+  "definitions": {
+    "variables": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Z_][A-Z0-9_]*$"
+      },
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "./common_patterns.json#/definitions/freeInput"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "concurrency": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_parallel_pipelines": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "max_parallel_jobs_per_pipeline": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        }
+      },
+      "default": {
+        "max_parallel_pipelines": 0,
+        "max_parallel_jobs_per_pipeline": 0
+      },
+      "required": []
+    },
+    "pipeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/identifier"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "needs": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "./common_patterns.json#/definitions/identifier"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "schedule": {
+          "$ref": "#/definitions/schedule"
+        },
+        "condition": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/freeInput"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "needs_all(ok)"
+        },
+        "workspace_dir": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/restrictedInput"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "repository": {
+          "$ref": "#/definitions/repository"
+        },
+        "variables": {
+          "$ref": "#/definitions/variables"
+        },
+        "jobs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/job"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "jobs"
+      ]
+    },
+    "schedule": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "when": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/restrictedInput"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "format": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/restrictedInput"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "timezone": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/restrictedInput"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "UTC"
+        },
+        "jitter": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/duration"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "0 seconds"
+        }
+      },
+      "required": [
+        "when",
+        "format"
+      ]
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "uri": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/restrictedInput"
+            },
+            {
+              "type": "string",
+              "format": "uri"
+            }
+          ]
+        },
+        "ref": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/restrictedInput"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "fetch_depth": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        },
+        "sparse_paths": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "./common_patterns.json#/definitions/restrictedInput"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "uri",
+        "ref"
+      ]
+    },
+    "job": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/identifier"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "needs": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "./common_patterns.json#/definitions/identifier"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "condition": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/freeInput"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "needs_all(ok)"
+        },
+        "retry_policy": {
+          "$ref": "#/definitions/retryPolicy"
+        },
+        "variables": {
+          "$ref": "#/definitions/variables"
+        },
+        "restrictions": {
+          "$ref": "#/definitions/restrictions"
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "allOf": [
+              {
+                "$ref": "./common_patterns.json#/definitions/freeInput"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "name",
+        "steps"
+      ]
+    },
+    "retryPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "condition": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/freeInput"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "max_attempts(1)"
+        },
+        "backoff": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/duration"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "0 seconds"
+        }
+      },
+      "default": {
+        "condition": "max_attempts(1)",
+        "backoff": "0 seconds"
+      }
+    },
+    "restrictions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "timeout": {
+          "$ref": "#/definitions/timeoutRestriction"
+        },
+        "memory": {
+          "$ref": "#/definitions/memoryRestriction"
+        },
+        "cpu": {
+          "$ref": "#/definitions/cpuRestriction"
+        },
+        "run_as": {
+          "$ref": "#/definitions/runAsRule"
+        }
+      },
+      "required": []
+    },
+    "timeoutRestriction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "duration": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/duration"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "termination_grace_period": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/duration"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "30 seconds"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "duration"
+          ]
+        },
+        {
+          "required": [
+            "termination_grace_period"
+          ]
+        }
+      ]
+    },
+    "memoryRestriction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "limit": {
+          "type": "string",
+          "pattern": "^\\d+[KMGT]?$"
+        },
+        "throttle_mark": {
+          "type": "string",
+          "pattern": "^\\d+[KMGT]?$"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "limit"
+          ]
+        },
+        {
+          "required": [
+            "throttle_mark"
+          ]
+        }
+      ]
+    },
+    "cpuRestriction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "limit": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "default": 1
+        },
+        "weight": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "default": 0.01
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "limit"
+          ]
+        },
+        {
+          "required": [
+            "weight"
+          ]
+        }
+      ]
+    },
+    "runAsRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "user": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "./common_patterns.json#/definitions/restrictedInput"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            {
+              "type": "integer",
+              "minimum": 0
+            }
+          ],
+          "default": null
+        },
+        "group": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "./common_patterns.json#/definitions/restrictedInput"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            {
+              "type": "integer",
+              "minimum": 0
+            }
+          ],
+          "default": null
+        },
+        "supplementary_groups": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "allOf": [
+                      {
+                        "$ref": "./common_patterns.json#/definitions/restrictedInput"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                ]
+              }
+            }
+          ],
+          "default": null
+        },
+        "allow_privilege_escalation": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
+  }
+}

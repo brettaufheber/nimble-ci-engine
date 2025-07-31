@@ -1,0 +1,232 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CI State File Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "pipelines": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/pipeline"
+      }
+    }
+  },
+  "required": [
+    "pipelines"
+  ],
+  "definitions": {
+    "pipeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/identifier"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "latest_execution": {
+          "$ref": "#/definitions/execution"
+        },
+        "previous_executions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/execution"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "latest_execution",
+        "previous_executions"
+      ]
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "execution_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "timestamp": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/restrictedInput"
+            },
+            {
+              "type": "string",
+              "format": "date-time"
+            }
+          ]
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "$ref": "#/definitions/status"
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "workspace_dir": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/restrictedInput"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "repository": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/repository"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "jobs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/job"
+          }
+        }
+      },
+      "required": [
+        "execution_id",
+        "timestamp",
+        "duration_ms",
+        "status",
+        "retries",
+        "workspace_dir",
+        "repository",
+        "jobs"
+      ]
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "uri": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/restrictedInput"
+            },
+            {
+              "type": "string",
+              "format": "uri"
+            }
+          ]
+        },
+        "commit_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]+$"
+        }
+      },
+      "required": [
+        "uri",
+        "commit_hash"
+      ]
+    },
+    "job": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/identifier"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "latest_attempt": {
+          "$ref": "#/definitions/attempt"
+        },
+        "previous_attempts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/attempt"
+          }
+        },
+        "log_file": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/restrictedInput"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "latest_attempt",
+        "previous_attempts",
+        "log_file"
+      ]
+    },
+    "attempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "timestamp": {
+          "allOf": [
+            {
+              "$ref": "./common_patterns.json#/definitions/restrictedInput"
+            },
+            {
+              "type": "string",
+              "format": "date-time"
+            }
+          ]
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "$ref": "#/definitions/status"
+        },
+        "exit_code": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 255
+        }
+      },
+      "required": [
+        "timestamp",
+        "duration_ms",
+        "status",
+        "exit_code"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "started",
+        "skipped",
+        "success",
+        "failure",
+        "timeout"
+      ]
+    }
+  }
+}

@@ -1,0 +1,60 @@
+variables:
+  REPO_URI: { tpl: 'env.TEST_REPO_URI' }
+  REPO_REF: main
+pipelines:
+  # succeeding pipeline
+  - name: build
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs:
+      - name: before_all
+        condition: 'always'
+        steps: [ ":" ]
+      - name: compile
+        needs: [ before_all ]
+        steps: [ ":" ]
+      - name: test
+        needs: [ compile ]
+        steps: [ ":" ]
+      - name: package
+        needs: [ test ]
+        steps: [ ":" ]
+      - name: on_success
+        needs: [ compile, test, package ]
+        condition: 'needs_all(ok)'
+        steps: [ ":" ]
+      - name: on_failure
+        needs: [ compile, test, package ]
+        condition: 'needs_any(fail)'
+        steps: [ ":" ]
+      - name: after_all
+        needs: [ on_success, on_failure ]
+        condition: 'always'
+        steps: [ ":" ]
+  # failing pipeline (test fails)
+  - name: build_fail
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs:
+      - name: before_all
+        condition: 'always'
+        steps: [ ":" ]
+      - name: compile
+        needs: [ before_all ]
+        steps: [ ":" ]
+      - name: test
+        needs: [ compile ]
+        steps: [ "exit 1" ]
+      - name: package
+        needs: [ test ]
+        steps: [ ":" ]
+      - name: on_success
+        needs: [ compile, test, package ]
+        condition: 'needs_all(ok)'
+        steps: [ ":" ]
+      - name: on_failure
+        needs: [ compile, test, package ]
+        condition: 'needs_any(fail)'
+        steps: [ ":" ]
+      - name: after_all
+        needs: [ on_success, on_failure ]
+        condition: 'always'
+        steps: [ ":" ]

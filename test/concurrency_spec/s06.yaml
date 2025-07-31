@@ -1,0 +1,50 @@
+# Scenario S06 — Serial pipeline composition of two job chains
+# Shape: (A1 -> A2 -> A3) -> (B1 -> B2 -> B3)
+# Expectation:
+#   • P1 completes fully before P2 starts (pipeline-level dependency).
+#   • Inside each pipeline, jobs are chained (no overlap due to job-level needs).
+
+variables:
+  MAX_CONCURRENT_PIPELINES: "0"
+  MAX_CONCURRENT_JOBS_PER_PIPELINE: "0"
+  TEST_COMMAND: { tpl: '"\(env.TEST_DIR)/concurrency_probe.sh"' }
+  INSTALL_DIR: { tpl: 'env.INSTALL_DIR' }
+  CI_CONFIG_FILE: { tpl: '"\(env.TEST_RESOURCES_DIR)/ci.yaml"' }
+  STATE_FILE: { tpl: 'env.STATE_FILE' }
+  JQ_MODULE_PATH: { tpl: 'env.JQ_MODULE_PATH' }
+  SCHEMA_BASE_URI: { tpl: 'env.SCHEMA_BASE_URI' }
+  SLEEP: "0.01"
+concurrency:
+  max_parallel_pipelines: { tpl: '$vars.MAX_CONCURRENT_PIPELINES | tonumber' }
+  max_parallel_jobs_per_pipeline: { tpl: '$vars.MAX_CONCURRENT_JOBS_PER_PIPELINE | tonumber' }
+pipelines:
+  - name: P1
+    needs: [ ]
+    jobs:
+      - name: A1
+        needs: [ ]
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+      - name: A2
+        needs: [ A1 ]
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+      - name: A3
+        needs: [ A2 ]
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: P2
+    needs: [ P1 ]
+    jobs:
+      - name: B1
+        needs: [ ]
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+      - name: B2
+        needs: [ B1 ]
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+      - name: B3
+        needs: [ B2 ]
+        steps:
+          - tpl: '$vars.TEST_COMMAND'

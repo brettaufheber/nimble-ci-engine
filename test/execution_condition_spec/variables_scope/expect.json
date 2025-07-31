@@ -1,0 +1,21 @@
+{
+  "pipelines": {
+    "var_global_pos": "success",
+    "var_global_neg_mix": "skipped",
+    "var_pipeline_override": "success",
+    "var_undefined": "skipped",
+    "vars_context_bridge": "success"
+  },
+  "jobs": {
+    "var_pipeline_override": {
+      "a_pipeline_mode_true": "success",
+      "b_pipeline_mode_false": "skipped",
+      "c_job_override_true": "success",
+      "d_sibling_pipeline_value": "success"
+    },
+    "vars_context_bridge": {
+      "a": "success",
+      "b": "success"
+    }
+  }
+}

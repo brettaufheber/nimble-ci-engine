@@ -1,0 +1,212 @@
+{
+  "variables": {
+    "ENV": "production",
+    "WORKSPACES_ROOT": "/opt/ci/workspaces",
+    "BASE_REPO_URI": "file:///srv/git",
+    "DEFAULT_BRANCH": "main",
+    "FETCH_DEPTH_STR": "2",
+    "CPU_LIMIT_STR": "0.75",
+    "CPU_WEIGHT_STR": "0.02",
+    "MEM_LIMIT": "1536M",
+    "MEM_THROTTLE": "1024M",
+    "TIMEOUT_DURATION": "5m",
+    "TIMEOUT_GRACE": "10s",
+    "RUN_UID": "1000",
+    "RUN_GID": "cigroup",
+    "PIPE_A_NAME": "alpha",
+    "PIPE_B_NAME": "beta",
+    "PIPE_A_REPO_NAME": "alpha",
+    "PIPE_B_REPO_NAME": "beta",
+    "TOKEN_FILE": "file:///foo/bar/token.txt",
+    "REFSPEC": "refs/heads/main",
+    "MAX_CONCURRENT_PIPELINES": "6",
+    "MAX_CONCURRENT_JOBS_PER_PIPELINE": "3",
+    "SECRET_GLOBAL": "s3cr3t-global",
+    "FEATURE_FLAG": "on",
+    "GLOBAL_SETTINGS": "settings-main"
+  },
+  "concurrency": {
+    "max_parallel_pipelines": 6,
+    "max_parallel_jobs_per_pipeline": 3
+  },
+  "pipelines": [
+    {
+      "name": "alpha",
+      "needs": [],
+      "workspace_dir": "/opt/ci/workspaces/alpha",
+      "repository": {
+        "uri": "file:///srv/git/alpha.git",
+        "ref": "main",
+        "fetch_depth": 2,
+        "sparse_paths": [
+          "src/",
+          "docs/README.md"
+        ]
+      },
+      "variables": {
+        "ENV": "staging",
+        "PIPELINE_TOKEN": "alpha-token-abc",
+        "PIPELINE_JSON": "{\"api_key\":\"alpha-API-KEY\",\"other\":123}",
+        "PIPELINE_API_KEY": "alpha-API-KEY",
+        "PIPELINE_AUTH_HEADER": "Bearer alpha-API-KEY",
+        "URL_BASE": "https://example.local/alpha",
+        "URL_HEADERS_ENDPOINT": "https://example.local/alpha/headers",
+        "CHAIN1": "A",
+        "CHAIN2": "A-B",
+        "CHAIN3": "A-B-C"
+      },
+      "jobs": [
+        {
+          "name": "init",
+          "variables": {
+            "ENV": "dev",
+            "PREV_JOB": "none",
+            "JOB_SETTINGS": "{\"mode\":\"fast\",\"params\":{\"threads\":2}}",
+            "JOB_MODE": "fast",
+            "JOB_TMP_DIR": "/opt/ci/workspaces/alpha/tmp",
+            "JOB_CHAIN_A": "1",
+            "JOB_CHAIN_B": "12",
+            "JOB_CHAIN_C": "123"
+          },
+          "restrictions": {
+            "timeout": {
+              "duration": "5m",
+              "termination_grace_period": "10s"
+            },
+            "memory": {
+              "limit": "1536M",
+              "throttle_mark": "1024M"
+            },
+            "cpu": {
+              "limit": 0.75,
+              "weight": 0.02
+            },
+            "run_as": {
+              "user": 1000,
+              "group": "cigroup",
+              "supplementary_groups": [
+                "docker",
+                "lxd",
+                2001
+              ],
+              "allow_privilege_escalation": true
+            }
+          },
+          "steps": [
+            "echo Init in dev for alpha",
+            "printenv | sort"
+          ]
+        },
+        {
+          "name": "build-staging",
+          "needs": [
+            "init"
+          ],
+          "variables": {
+            "PREV_JOB": "init"
+          },
+          "steps": [
+            "make build",
+            "echo Using API alpha-API-KEY"
+          ]
+        },
+        {
+          "name": "test",
+          "needs": [
+            "build-staging"
+          ],
+          "condition": "on_success",
+          "restrictions": {
+            "run_as": {
+              "user": 1000,
+              "group": null
+            }
+          },
+          "steps": [
+            "run unit",
+            "make test"
+          ]
+        },
+        {
+          "name": "deploy",
+          "needs": [
+            "build-staging",
+            "test"
+          ],
+          "condition": "manual",
+          "steps": [
+            "echo Deploy to staging"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "beta",
+      "needs": [
+        "alpha"
+      ],
+      "workspace_dir": "/opt/ci/workspaces/beta",
+      "repository": {
+        "uri": "file:///srv/git/beta.git",
+        "ref": "develop",
+        "sparse_paths": [
+          "src/",
+          "docs/CHANGELOG.md"
+        ]
+      },
+      "variables": {
+        "ENV": "production",
+        "PIPELINE_TOKEN": "beta-token-xyz",
+        "BASE_URL": "https://example.local/beta",
+        "HEADERS_URI": "https://example.local/beta/headers"
+      },
+      "jobs": [
+        {
+          "name": "compile-production",
+          "steps": [
+            "echo Compiling for beta",
+            "npm ci"
+          ]
+        },
+        {
+          "name": "lint",
+          "needs": [
+            "compile-production"
+          ],
+          "steps": [
+            "npm run lint"
+          ]
+        },
+        {
+          "name": "test",
+          "needs": [
+            "compile-production"
+          ],
+          "steps": [
+            "npm test"
+          ]
+        },
+        {
+          "name": "package",
+          "needs": [
+            "compile-production",
+            "lint",
+            "test"
+          ],
+          "restrictions": {
+            "run_as": {
+              "user": 1000,
+              "group": null,
+              "supplementary_groups": null,
+              "allow_privilege_escalation": false
+            }
+          },
+          "steps": [
+            "echo Packaging beta",
+            "npm pack"
+          ]
+        }
+      ]
+    }
+  ]
+}

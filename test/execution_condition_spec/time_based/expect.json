@@ -1,0 +1,23 @@
+{
+  "pipelines": {
+    "time_jobs": "timeout"
+  },
+  "jobs": {
+    "time_jobs": {
+      "linux": "success",
+      "macos": "success",
+      "windows": "success",
+      "within_5min": "success",
+      "order_a_before_b": "success",
+      "first_finish_linux": "success",
+      "longest_is_windows": "success",
+      "gate_delay": "success",
+      "linux2": "success",
+      "macos2": "success",
+      "windows2": "success",
+      "first_start_linux2": "success",
+      "fast_timeout": "timeout",
+      "fastest_must_success_neg": "skipped"
+    }
+  }
+}

@@ -1,0 +1,57 @@
+# Scenario S07-p — Disjoint parallel chains as pipelines
+# Shape: (A -> B -> C), (D -> E -> F)
+# Expectation:
+#   • A->B->C and D->E->F are two independent chains.
+#   • With permissive pipeline slots, steps from both chains may overlap in time.
+#   • Order inside each chain is enforced solely via pipeline-level `needs`.
+
+variables:
+  MAX_CONCURRENT_PIPELINES: "0"
+  MAX_CONCURRENT_JOBS_PER_PIPELINE: "0"
+  TEST_COMMAND: { tpl: '"\(env.TEST_DIR)/concurrency_probe.sh"' }
+  INSTALL_DIR: { tpl: 'env.INSTALL_DIR' }
+  CI_CONFIG_FILE: { tpl: '"\(env.TEST_RESOURCES_DIR)/ci.yaml"' }
+  STATE_FILE: { tpl: 'env.STATE_FILE' }
+  JQ_MODULE_PATH: { tpl: 'env.JQ_MODULE_PATH' }
+  SCHEMA_BASE_URI: { tpl: 'env.SCHEMA_BASE_URI' }
+  SLEEP: "0.01"
+concurrency:
+  max_parallel_pipelines: { tpl: '$vars.MAX_CONCURRENT_PIPELINES | tonumber' }
+  max_parallel_jobs_per_pipeline: { tpl: '$vars.MAX_CONCURRENT_JOBS_PER_PIPELINE | tonumber' }
+pipelines:
+  - name: A
+    needs: [ ]
+    jobs:
+      - name: A
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: B
+    needs: [ A ]
+    jobs:
+      - name: B
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: C
+    needs: [ B ]
+    jobs:
+      - name: C
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: D
+    needs: [ ]
+    jobs:
+      - name: D
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: E
+    needs: [ D ]
+    jobs:
+      - name: E
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: F
+    needs: [ E ]
+    jobs:
+      - name: F
+        steps:
+          - tpl: '$vars.TEST_COMMAND'

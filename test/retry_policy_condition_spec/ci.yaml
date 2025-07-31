@@ -1,0 +1,83 @@
+pipelines:
+  # A) Default: schema max_attempts(1) → exactly one success and no retry.
+  - name: p_max1_attempt
+    jobs:
+      - name: unnamed
+        steps: [ ":" ]        # ":" is a noop with exit code 0
+  # B) Unconditional: max_attempts(3) → always rerun until 3 attempts, all succeed.
+  - name: p_unconditional_three_times_ok
+    jobs:
+      - name: unnamed
+        steps: [ ":" ]
+        retry_policy:
+          condition: 'max_attempts(3)'
+          backoff: "0 seconds"
+  # C) Unconditional failures: max_attempts(3) → exactly 3 failures, final status failure.
+  - name: p_unconditional_three_times_failure
+    jobs:
+      - name: unnamed
+        steps: [ "exit 1" ]   # fail every time
+        retry_policy:
+          condition: 'max_attempts(3)'
+          backoff: "0 seconds"  # no wait between attempts
+  # D) Unconditional timeouts: max_attempts(3) + long sleep + 1s timeout → three timeouts.
+  - name: p_unconditional_three_times_timeout
+    jobs:
+      - name: unnamed
+        restrictions:
+          timeout:
+            duration: "1 second"
+            termination_grace_period: "0 seconds"
+        steps:
+          - 'sleep 10'
+        retry_policy:
+          condition: 'max_attempts(3)'
+          backoff: "0 seconds"
+  # E) Outcome-driven: first attempt fails once then success; retry_on(failure) → [failure, success].
+  - name: p_one_failure_then_success
+    jobs:
+      - name: unnamed
+        steps:
+          - 'if [[ ! -f .failure_once ]]; then touch .failure_once; exit 1; else :; fi'
+        retry_policy:
+          condition: 'max_attempts(5) and retry_on(failure)'
+          backoff: "0 seconds"
+  # F) Timeout-driven: first attempt times out then success; retry_on(timeout) → [timeout, success].
+  - name: p_one_timeout_then_success
+    jobs:
+      - name: unnamed
+        restrictions:
+          timeout:
+            duration: "3 second"
+            termination_grace_period: "0 seconds"
+        steps:
+          - 'if [[ ! -f .timeout_once ]]; then touch .timeout_once; sleep 10; else :; fi'
+        retry_policy:
+          condition: 'max_attempts(5) and retry_on(timeout)'
+          backoff: "0 seconds"
+  # G) Two consecutive successes required: first fails then two successes in a row stop retries.
+  - name: p_two_consecutive_successes
+    jobs:
+      - name: unnamed
+        steps:
+          - 'if [ ! -f .fail_once ]; then touch .fail_once; exit 1; else :; fi'
+        retry_policy:
+          condition: >-
+            max_attempts(99) and (
+              (retry_on(.status == "success") and (retries > 0) and (
+                $ctx.self.previous_attempts | sort_by(.timestamp | to_millis) | last | .status == "success"
+              ) | not)
+            )
+          backoff: "0 seconds"
+  # H) Two failures then success: attempt counter file makes first two fail then succeed (1s backoff only for coverage).
+  - name: p_two_failures_then_success
+    jobs:
+      - name: unnamed
+        steps:
+          - >
+            if [[ ! -f .attempt_count ]]; then echo "0" > .attempt_count; fi;
+            N="$(cat .attempt_count)"; N=$(( N+1 )); echo "$N" > .attempt_count;
+            [[ $N -lt 3 ]] && exit 1 || :
+        retry_policy:
+          condition: 'max_attempts(99) and retry_on(failure)'
+          backoff: "1 second"

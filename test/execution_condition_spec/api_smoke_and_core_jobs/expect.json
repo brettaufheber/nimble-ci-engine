@@ -1,0 +1,35 @@
+{
+  "pipelines": {
+    "js_ok": "success",
+    "js_fail": "failure"
+  },
+  "jobs": {
+    "js_ok": {
+      "ok1": "success",
+      "ok2": "success",
+      "ok3": "success",
+      "skip1": "skipped",
+      "always": "success",
+      "never": "skipped",
+      "all_ok": "success",
+      "all_done": "success",
+      "all_active": "skipped",
+      "any_fail_none": "skipped",
+      "default_ok": "success",
+      "default_skips_on_skipped": "skipped",
+      "empty_needs_all_true": "success",
+      "empty_needs_any_false": "skipped",
+      "need_null_exists_check": "success",
+      "all_final_pred_ok": "success"
+    },
+    "js_fail": {
+      "ok1": "success",
+      "failure1": "failure",
+      "timeout1": "timeout",
+      "any_fail_failure": "success",
+      "any_fail_timeout": "success",
+      "all_final_pred_fail": "success",
+      "all_done_negative": "skipped"
+    }
+  }
+}

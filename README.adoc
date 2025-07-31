@@ -1,5 +1,247 @@
 = NimbleCI
 
+A lean CI engine in **Bash + jq** that builds **real software stacks** directly on **hosts, VMs, and Linux containers**—without hauling in heavyweight orchestrators.
+
+== Why NimbleCI?
+
+* **Tiny codebase, big leverage.** Designed to stay approachable, auditable, and easy to extend.
+* **Host-first execution.** Run jobs **on the machine that actually provisions your stack**—perfect for servers, bare-metal labs, and VM fleets.
+* **Pragmatic isolation, no Docker-in-Docker.** Uses Linux primitives (**cgroup, setpriv, env**) for containment instead of container sandboxes.
+Fewer layers, less magic, more control.
+* **Stack-aware orchestration.** Model dependencies not just **between jobs**, but also **between entire pipelines** when bringing up multi-service systems.
+* **Configuration you already know.** Author pipelines in **YAML or JSON**.
+* **jq-powered templating.** Lightweight, composable, and expressive—generate configs, compute values, and avoid repetition.
+* **Pluggable “resolvers”.** Pull variables and secrets via `http(s)`, `sftp`, `file`, and `vals` URIs for clean separation of code and credentials.
+* **Portable by default.** Pure Bash + jq means it’s comfortable on minimal Linux images and air-gapped environments.
+
+[NOTE]
+====
+NimbleCI favors clarity and control.
+If your primary goal is hard multi-tenant isolation, run NimbleCI on dedicated workers/VMs per project and leverage the built-in cgroup + privilege-drop features for guardrails.
+====
+
+== Quick glance
+
+*Language:* Bash + jq +
+*Config:* YAML or JSON +
+*Isolation:* cgroup v2 (CPU/mem/io), `setpriv` (uid/gid/caps/no_new_privs), curated environment via `env` +
+*Resolvers:* `http://`, `https://`, `sftp://`, `file://`, `vals://…` +
+*Use cases:* infra bring-up, golden-image baking, host-level builds, CI for embedded/edge, on-prem fleets
+
+== Key ideas
+
+=== 1) Host-level CI for real stacks
+
+Most CI tools are optimized for ephemeral containers.
+NimbleCI is optimized for **bringing up actual services** (databases, caches, queues, app servers) on **actual machines**—exactly where they will run in production or staging.
+
+=== 2) Dependencies across pipelines
+
+Bringing up a stack means more than “job A needs job B.” With NimbleCI you can express:
+* *Job → Job* dependencies within a pipeline (build → test → deploy) * *Pipeline → Pipeline* dependencies (e.g., `base-os` → `datastore` → `app` → `smoke-tests`)
+
+This mirrors the way infrastructure really comes together.
+
+=== 3) jq-based templating
+
+No heavyweight template engines. jq lets you:
+* Generate fragments (env blocks, resource limits, labels) * Compute values from parameters and secrets * Reuse partials across jobs and pipelines
+
+It’s powerful, predictable, and already in your toolbox.
+
+=== 4) Practical isolation without containers
+
+NimbleCI **does not** rely on container isolation.
+Instead it uses:
+* **cgroup** constraints to prevent noisy neighbors * **setpriv** to drop capabilities and switch uid/gid * Curated **env** to keep job environments tight and deterministic
+
+This keeps execution close to the metal while still applying guardrails.
+
+== Configuration (YAML)
+
+[.lead]
+Illustrative example showing job and pipeline dependencies, cgroup & privilege settings, and URI-based variable resolution.
+
+[source,yaml]
+----
+# pipelines.yml
+vars:
+  # Pull vars/secrets from resolvers
+  REGISTRY_AUTH: ${uri:file://secrets/registry.token}
+  APP_VERSION:   ${uri:https://ci.example.com/artifacts/app/version.txt}
+  DB_PASSWORD:   ${uri:vals://ref+file://secrets.enc.yaml#db.prod.password}
+  BUILD_FLAGS:   ${uri:sftp://ops@10.0.0.7:/etc/nimbleci/build-flags.yml}
+
+pipelines:
+  base-os:
+    description: Prepare base system packages
+    jobs:
+      - name: packages
+        env:
+          - KEEP=PATH,HOME
+        setpriv:
+          uid: 1001
+          gid: 1001
+          no_new_privs: true
+        cgroup:
+          cpu.max: "200000 1000000"    # 20% CPU quota
+          memory.max: "1G"             # 1 GiB cap
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl ca-certificates
+
+  datastore:
+    needs: [base-os]                   # Pipeline-level dependency
+    jobs:
+      - name: postgres
+        run: |
+          sudo apt-get install -y postgresql
+          sudo systemctl enable --now postgresql
+          psql -U postgres -c "ALTER USER postgres WITH PASSWORD '${DB_PASSWORD}'"
+
+  app:
+    needs: [datastore]
+    jobs:
+      - name: build
+        env:
+          - REGISTRY_AUTH
+          - APP_VERSION
+        run: |
+          ./scripts/build.sh --version "${APP_VERSION}" ${BUILD_FLAGS}
+      - name: deploy
+        needs: [build]                 # Job-level dependency
+        run: |
+          ./scripts/deploy.sh --to staging
+
+  smoke-tests:
+    needs: [app]
+    jobs:
+      - name: e2e
+        run: |
+          ./scripts/smoke.sh --base-url https://staging.example.com
+----
+
+== Configuration (JSON)
+
+[source,json]
+----
+{
+  "pipelines": {
+    "images": {
+      "jobs": [
+        {
+          "name": "bake",
+          "cgroup": { "memory.max": "2G" },
+          "setpriv": { "uid": 1002, "gid": 1002, "no_new_privs": true },
+          "run": "./scripts/bake-image.sh"
+        }
+      ]
+    },
+    "conformance": {
+      "needs": ["images"],
+      "jobs": [
+        { "name": "lint", "run": "./scripts/lint.sh" },
+        { "name": "unit", "needs": ["lint"], "run": "./scripts/unit.sh" }
+      ]
+    }
+  }
+}
+----
+
+== jq templating in practice
+
+[.lead]
+Use jq to keep configs DRY and computed.
+
+[source,bash]
+----
+# Example: generate a shared env fragment with jq and splice it into jobs
+export SHARED_ENV_JSON="$(jq -n \
+  --arg ver "${APP_VERSION}" \
+  '{ APP_VERSION: $ver, LANG: "C.UTF-8" }')"
+
+# The engine can merge fragments like:
+# job.env += fromjson(ENV["SHARED_ENV_JSON"])
+----
+
+[tip]
+You can keep reusable jq snippets (partials) in a `templates/` directory and compose them by merging their objects into jobs or pipelines.
+
+== Resolvers: external variables & secrets
+
+[cols="20,80"]
+|===
+|Scheme |Usage
+
+|`file://`
+|Load local files (air-gapped friendly). Example: `file:///etc/nimbleci/vars.json`
+
+|`http://`, `https://`
+|Fetch from internal services or artifact stores. Example: `https://ci.example.com/env/prod.json`
+
+|`sftp://`
+|Pull securely from bastion/ops hosts. Example: `sftp://ops@10.0.0.7:/etc/nimbleci/flags.yml`
+
+|`vals://`
+|Use vals-style references for encrypted/remote sources. Example: `vals://ref+file://secrets.enc.yaml#ci.prod`
+|===
+
+[IMPORTANT]
+Protect your resolver endpoints with the same rigor as any secret store (mTLS, narrow permissions, audit).
+
+== Security model (at a glance)
+
+* **Process & privilege:** `setpriv` to switch UID/GID, drop caps, enable `no_new_privs`.
+* **Resources:** cgroup constraints for CPU, memory, and IO limits.
+* **Environment:** explicit variable allowlists; prefer resolver-fetched secrets over in-repo values.
+* **Isolation stance:** No container sandboxing by default; pair with isolated runners/VMs for untrusted workloads.
+
+== When to choose NimbleCI
+
+* You need to **provision real services** (databases, caches, brokers) on **real hosts**.
+* You value a **minimal, readable codebase** and **predictable behavior** over opaque layers.
+* You operate **on-prem, air-gapped, or in tightly controlled networks**.
+* You want to **compose pipelines as building blocks** for end-to-end stack bring-up.
+
+== Getting started
+
+[.lead]
+Install basic dependencies, then run your first pipeline.
+
+.Dependencies (typical)
+* Linux (cgroup v2 recommended)
+* `bash`, `jq` (≥ 1.6), `coreutils`
+* `util-linux` (for `setpriv`)
+* `curl`/`wget`, `openssh-clients` (for `sftp`)
+
+.Run (example; adjust to your layout)
+[source,bash]
+----
+# assuming nimbleci is available in your repo or PATH
+./nimbleci run --config pipelines.yml --pipeline app
+# or
+nimbleci run -c pipelines.yml -p smoke-tests
+----
+
+[NOTE]
+CLI flags and paths may differ depending on how you package NimbleCI in your repo (script vs. binary).
+Provide a `Makefile` or `./scripts/bootstrap.sh` for your team.
+
+== Comparison (mental model)
+
+*Compared to container-centric CI:*
+* No Docker-in-Docker complexity when you actually need to touch the host.
+* Fewer moving parts, faster feedback in constrained or offline environments.
+* Stronger fit for provisioning and long-lived services.
+
+*Compared to hosted pipelines:*
+* Runs anywhere Linux runs; keep execution and secrets **on your network**.
+* Simple to audit, simple to fork, simple to fix.
+
+== Contributing
+
+// TODO
+
 == License
 
 Copyright (c) 2025 Eric Löffler

@@ -1,0 +1,79 @@
+variables:
+  REPO_URI: { tpl: 'env.TEST_REPO_URI' }
+  REPO_REF: main
+pipelines:
+  - name: time_jobs
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs:
+      # competitors with distinct durations (all succeed)
+      - name: linux
+        steps: [ "sleep 3" ]
+      - name: macos
+        steps: [ "sleep 5" ]
+      - name: windows
+        steps: [ "sleep 7" ]
+      # within 5 minutes after linux
+      - name: within_5min
+        needs: [ linux ]
+        condition: >-
+          (to_millis(self.timestamp) - to_millis(need("linux").timestamp) + need("linux").duration_ms)
+            <= 300000
+        steps: [ ":" ]
+      # linux ends before macos
+      - name: order_a_before_b
+        needs: [ linux, macos ]
+        condition: >-
+          (to_millis(need("linux").timestamp) + need("linux").duration_ms)
+            < (to_millis(need("macos").timestamp) + need("macos").duration_ms)
+        steps: [ ":" ]
+      # first-finish linux
+      - name: first_finish_linux
+        needs: [ linux, macos, windows ]
+        condition: >-
+          [ "linux", "macos", "windows" ] as $jobs
+          | ([ $jobs[] | need(.) | to_millis(.timestamp) + .duration_ms ] | min)
+              == (need("linux") | to_millis(.timestamp) + .duration_ms)
+        steps: [ ":" ]
+      # longest is windows
+      - name: longest_is_windows
+        needs: [ linux, macos, windows ]
+        condition: >-
+          [ "linux", "macos", "windows" ] as $jobs
+          | ([ $jobs[] | need(.) | to_millis(.timestamp) + .duration_ms ] | max)
+              == (need("windows") | to_millis(.timestamp) + .duration_ms)
+        steps: [ ":" ]
+      # deterministic first-start (gate others)
+      - name: gate_delay
+        steps: [ "sleep 2" ]
+      - name: linux2
+        steps: [ "sleep 1" ]
+      - name: macos2
+        needs: [ gate_delay ]
+        steps: [ "sleep 1" ]
+      - name: windows2
+        needs: [ gate_delay ]
+        steps: [ "sleep 1" ]
+      # first-start linux2
+      - name: first_start_linux2
+        needs: [ linux2, macos2, windows2 ]
+        condition: >-
+          [ "linux2", "macos2", "windows2" ] as $jobs
+          | ([ $jobs[] | { name: ., start: (need(.) | to_millis(.timestamp)) } ] | sort_by(.start) | first | .name)
+              == "linux2"
+        steps: [ ":" ]
+      # negative: fastest must be success (introduce very fast timeout)
+      - name: fast_timeout
+        restrictions:
+          timeout:
+            duration: "1 seconds"
+            termination_grace_period: "0 seconds"
+        steps: [ "sleep 10" ]
+      - name: fastest_must_success_neg
+        needs: [ fast_timeout, linux ]
+        condition: >-
+          [ "fast_timeout", "linux" ] as $jobs
+          | [ $jobs[] | need(.) | { name: .name, end: (to_millis(.timestamp) + .duration_ms), status: .status } ]
+          | sort_by(.end)
+          | first
+          | .status == "success"
+        steps: [ ":" ]

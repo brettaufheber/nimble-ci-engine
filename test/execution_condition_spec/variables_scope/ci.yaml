@@ -1,0 +1,67 @@
+variables:
+  REPO_URI: { tpl: 'env.TEST_REPO_URI' }
+  REPO_REF: main
+  FEATURE_X: "on"
+pipelines:
+  # global variable use (positive)
+  - name: var_global_pos
+    condition: '$vars.FEATURE_X | tobool'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: do, steps: [ ":" ] } ]
+  # global + pipeline mix (negative)
+  - name: var_global_neg_mix
+    variables:
+      REQUIRED: "off"
+    condition: '($vars.FEATURE_X | tobool) == ($vars.REQUIRED | tobool)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: noop, steps: [ ":" ] } ]
+  # pipeline & job overrides
+  - name: var_pipeline_override
+    variables: { MODE: "pipeline" }
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs:
+      - name: a_pipeline_mode_true
+        condition: '$vars.MODE == "pipeline"'
+        steps: [ ":" ]
+      - name: b_pipeline_mode_false
+        condition: '$vars.MODE == "global"'
+        steps: [ ":" ]
+      - name: c_job_override_true
+        needs: [ a_pipeline_mode_true ]
+        variables: { MODE: "job" }
+        condition: '$vars.MODE == "job"'
+        steps: [ ":" ]
+      - name: d_sibling_pipeline_value
+        needs: [ c_job_override_true ]
+        condition: '$vars.MODE == "pipeline"'
+        steps: [ ":" ]
+  # undefined var -> false -> skip
+  - name: var_undefined
+    condition: '$vars.DOES_NOT_EXIST == "whatever"'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: noop, steps: [ ":" ] } ]
+  # variables to context.self alignment
+  - name: vars_context_bridge
+    condition: >-
+      ($vars.CI_WORKSPACE_DIR == self.workspace_dir) and
+      ($vars.CI_REPO_URI == self.repository.uri) and
+      ($vars.CI_REPO_REF | type == "string") and
+      ($vars.CI_REPO_COMMIT_HASH == self.repository.commit_hash) and
+      ($vars.CI_PIPELINE_NAME == $ctx.subject.name) and
+      ($vars.CI_PIPELINE_EXECUTION_ID == self.execution_id) and
+      ($vars.CI_PIPELINE_TIMESTAMP == self.timestamp) and
+      ($vars.CI_PIPELINE_STATUS == self.status) and
+      ($vars.CI_PIPELINE_RETRIES == self.retries)
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs:
+      - name: a
+        steps: [ ":" ]
+      - name: b
+        needs: [ a ]
+        condition: >-
+          ($vars.CI_PIPELINE_NAME == "vars_context_bridge") and
+          ($vars.CI_JOB_NAME == "b") and
+          ($vars.CI_JOB_NAME == $ctx.subject.name) and
+          ($vars.CI_JOB_TIMESTAMP == self.timestamp) and
+          ($vars.CI_JOB_STATUS == self.status)
+        steps: [ ":" ]

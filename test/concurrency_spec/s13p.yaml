@@ -1,0 +1,75 @@
+# Scenario S13-p — Hourglass (4-in 4-out bottleneck) DAG; using pipelines
+# Shape: (A1, A2, A3, A4) -> B -> (C1, C2, C3, C4)
+# Expectation:
+#   • A1..A4 may run in parallel.
+#   • B waits for all A*.
+#   • C1..C4 wait for B and may run in parallel afterwards.
+
+variables:
+  MAX_CONCURRENT_PIPELINES: "0"
+  MAX_CONCURRENT_JOBS_PER_PIPELINE: "0"
+  TEST_COMMAND: { tpl: '"\(env.TEST_DIR)/concurrency_probe.sh"' }
+  INSTALL_DIR: { tpl: 'env.INSTALL_DIR' }
+  CI_CONFIG_FILE: { tpl: '"\(env.TEST_RESOURCES_DIR)/ci.yaml"' }
+  STATE_FILE: { tpl: 'env.STATE_FILE' }
+  JQ_MODULE_PATH: { tpl: 'env.JQ_MODULE_PATH' }
+  SCHEMA_BASE_URI: { tpl: 'env.SCHEMA_BASE_URI' }
+  SLEEP: "0.01"
+concurrency:
+  max_parallel_pipelines: { tpl: '$vars.MAX_CONCURRENT_PIPELINES | tonumber' }
+  max_parallel_jobs_per_pipeline: { tpl: '$vars.MAX_CONCURRENT_JOBS_PER_PIPELINE | tonumber' }
+pipelines:
+  - name: A1
+    needs: [ ]
+    jobs:
+      - name: A1
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: A2
+    needs: [ ]
+    jobs:
+      - name: A2
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: A3
+    needs: [ ]
+    jobs:
+      - name: A3
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: A4
+    needs: [ ]
+    jobs:
+      - name: A4
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: B
+    needs: [ A1, A2, A3, A4 ]
+    jobs:
+      - name: B
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: C1
+    needs: [ B ]
+    jobs:
+      - name: C1
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: C2
+    needs: [ B ]
+    jobs:
+      - name: C2
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: C3
+    needs: [ B ]
+    jobs:
+      - name: C3
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: C4
+    needs: [ B ]
+    jobs:
+      - name: C4
+        steps:
+          - tpl: '$vars.TEST_COMMAND'

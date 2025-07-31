@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Common String Patterns",
+  "definitions": {
+    "freeInput": {
+      "pattern": "^[^\\x00]*$",
+      "maxLength": 1048576
+    },
+    "restrictedInput": {
+      "pattern": "^(?!\\s)(?!.*\\s$)[^\\x00-\\x1F\\x7F\\u0080-\\u009F]+$",
+      "maxLength": 1048576
+    },
+    "identifier": {
+      "pattern": "^(?!\\s)(?!.*\\s$)(?!\\.)[^\\x00-\\x1F\\x7F\\u0080-\\u009F\/\\\\]+$",
+      "maxLength": 63
+    },
+    "duration": {
+      "pattern": "^(?!.*\\s$)((0|[1-9][0-9]*)(\\.[0-9]+)?([\\u0020\\u0009]+(secs?|seconds?|mins?|minutes?|hrs?|hours?|days?|wks?|weeks?)|[\\u0020\\u0009]*[smhdw])([\\u0020\\u0009]+|$))+$",
+      "maxLength": 120
+    }
+  }
+}

@@ -1,0 +1,134 @@
+pipelines:
+  - name: p_run_as
+    jobs:
+      # 1) No run_as → defaults (CURRENT_UID/GID + --init-groups)
+      - name: "job_default"
+        steps:
+          - 'echo ok'
+      # 2) group: explicit null values → defaults (CURRENT_UID/GID + --init-groups)
+      - name: "job_null_values"
+        restrictions:
+          run_as:
+            user: null
+            group: null
+            supplementary_groups: null
+        steps: [ 'echo ok' ]
+      # 3) user as name → UID/GID from passwd, group null → user’s primary group
+      - name: "job_user_name"
+        restrictions:
+          run_as:
+            user: "alice"
+        steps:
+          - 'echo ok'
+      # 4) user as UID → UID/GID from passwd
+      - name: "job_user_uid"
+        restrictions:
+          run_as:
+            user: 2000
+        steps:
+          - 'echo ok'
+      # 5) user + group by name → GID from group, not from passwd
+      - name: "job_user_and_group_name"
+        restrictions:
+          run_as:
+            user: "alice"
+            group: "staff"
+        steps:
+          - 'echo ok'
+      # 6) user + group as GID
+      - name: "job_user_and_group_gid"
+        restrictions:
+          run_as:
+            user: 2000
+            group: 100
+        steps:
+          - 'echo ok'
+      # 7) user root by name → 0:0
+      - name: "job_user_root_name"
+        restrictions:
+          run_as:
+            user: "root"
+        steps: [ 'echo ok' ]
+      # 8) user root by UID → 0:0
+      - name: "job_user_root_uid"
+        restrictions:
+          run_as:
+            user: 0
+        steps: [ 'echo ok' ]
+      # 9) supplementary_groups = [] (empty) → neither --init-groups nor --groups
+      - name: "job_supp_groups_empty"
+        restrictions:
+          run_as:
+            user: "alice"
+            supplementary_groups: [ ]
+        steps:
+          - 'echo ok'
+      # 10) supplementary_groups = ["devs", "dialout"] → --groups "200,20"
+      - name: "job_supp_groups_names"
+        restrictions:
+          run_as:
+            user: "alice"
+            supplementary_groups:
+              - "devs"
+              - "dialout"
+        steps:
+          - 'echo ok'
+      # 11) supplementary_groups mixed (name + GID)
+      - name: "job_supp_groups_mixed"
+        restrictions:
+          run_as:
+            user: "alice"
+            supplementary_groups:
+              - "devs"
+              - 300
+              - "users"
+        steps:
+          - 'echo ok'
+      # 12) allow_privilege_escalation=false → --no-new-privs
+      - name: "job_no_new_privs"
+        restrictions:
+          run_as:
+            user: "builder"
+            allow_privilege_escalation: false
+        steps:
+          - 'echo ok'
+      # 13) Error: unknown user by name
+      - name: "job_user_name_unknown"
+        restrictions:
+          run_as:
+            user: "nobodyx"
+        steps:
+          - 'echo ok'
+      # 14) Error: unknown user by UID
+      - name: "job_user_uid_unknown"
+        restrictions:
+          run_as:
+            user: 424242
+        steps:
+          - 'echo ok'
+      # 15) Error: unknown group by name (primary group)
+      - name: "job_group_name_unknown"
+        restrictions:
+          run_as:
+            user: "alice"
+            group: "nogroupx"
+        steps:
+          - 'echo ok'
+      # 16) Error: unknown group by GID (primary group)
+      - name: "job_group_gid_unknown"
+        restrictions:
+          run_as:
+            user: "alice"
+            group: 424242
+        steps:
+          - 'echo ok'
+      # 17) Error: unknown supplementary_group in list
+      - name: "job_supp_groups_unknown"
+        restrictions:
+          run_as:
+            user: "alice"
+            supplementary_groups:
+              - "devs"
+              - "doesnotexist"
+        steps:
+          - 'echo ok'

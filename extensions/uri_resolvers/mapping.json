@@ -1,0 +1,22 @@
+{
+  "^file:": [
+    "./extensions/uri_resolvers/curl.sh",
+    "${URI}"
+  ],
+  "^http://": [
+    "./extensions/uri_resolvers/curl.sh",
+    "${URI}"
+  ],
+  "^https://": [
+    "./extensions/uri_resolvers/curl.sh",
+    "${URI}"
+  ],
+  "^sftp://": [
+    "./extensions/uri_resolvers/curl.sh",
+    "${URI}"
+  ],
+  "^ref\\+[a-z][a-z0-9]*://": [
+    "./extensions/uri_resolvers/vals.sh",
+    "${URI}"
+  ]
+}

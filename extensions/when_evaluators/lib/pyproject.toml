@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lib_helpers"
+version = "0.1.0"
+requires-python = ">=3.9"
+dependencies = [
+    "tzdata>=2023.3"
+]
+
+[tool.setuptools]
+packages = ["lib_helpers"]
+
+[tool.setuptools.package-dir]
+lib_helpers = "."

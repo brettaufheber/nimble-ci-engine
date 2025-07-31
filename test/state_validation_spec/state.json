@@ -1,0 +1,230 @@
+{
+  "pipelines": [
+    {
+      "name": "p1",
+      "latest_execution": {
+        "execution_id": 3,
+        "timestamp": "2025-08-31T12:00:00Z",
+        "duration_ms": 1000,
+        "status": "started",
+        "retries": 0,
+        "workspace_dir": "/ws",
+        "repository": null,
+        "jobs": [
+          {
+            "name": "build",
+            "latest_attempt": {
+              "timestamp": "2025-08-31T12:01:00Z",
+              "duration_ms": 100,
+              "status": "success",
+              "exit_code": 0
+            },
+            "previous_attempts": [
+              {
+                "timestamp": "2025-08-30T09:55:00Z",
+                "duration_ms": 120,
+                "status": "failure",
+                "exit_code": 1
+              }
+            ],
+            "log_file": "/logs/build.log"
+          },
+          {
+            "name": "test",
+            "latest_attempt": {
+              "timestamp": "2025-08-31T12:02:00Z",
+              "duration_ms": 200,
+              "status": "started",
+              "exit_code": null
+            },
+            "previous_attempts": [
+              {
+                "timestamp": "2025-08-31T10:30:00Z",
+                "duration_ms": 160,
+                "status": "failure",
+                "exit_code": 1
+              },
+              {
+                "timestamp": "2025-08-31T11:40:00Z",
+                "duration_ms": 180,
+                "status": "success",
+                "exit_code": 0
+              }
+            ],
+            "log_file": "/logs/test.log"
+          },
+          {
+            "name": "deploy",
+            "latest_attempt": {
+              "timestamp": "2025-08-31T12:03:00Z",
+              "duration_ms": 0,
+              "status": "pending",
+              "exit_code": null
+            },
+            "previous_attempts": [
+              {
+                "timestamp": "2025-08-31T10:10:00Z",
+                "duration_ms": 30,
+                "status": "failure",
+                "exit_code": 1
+              },
+              {
+                "timestamp": "2025-08-31T11:50:00Z",
+                "duration_ms": 20,
+                "status": "skipped",
+                "exit_code": 0
+              }
+            ],
+            "log_file": "/logs/deploy.log"
+          },
+          {
+            "name": "cycle1",
+            "latest_attempt": {
+              "timestamp": "2025-08-31T12:03:10Z",
+              "duration_ms": 10,
+              "status": "skipped",
+              "exit_code": 0
+            },
+            "previous_attempts": [
+              {
+                "timestamp": "2025-08-31T11:59:00Z",
+                "duration_ms": 8,
+                "status": "skipped",
+                "exit_code": 0
+              }
+            ],
+            "log_file": "/logs/c1.log"
+          },
+          {
+            "name": "cycle2",
+            "latest_attempt": {
+              "timestamp": "2025-08-31T12:03:20Z",
+              "duration_ms": 10,
+              "status": "failure",
+              "exit_code": 1
+            },
+            "previous_attempts": [
+              {
+                "timestamp": "2025-08-31T11:58:30Z",
+                "duration_ms": 9,
+                "status": "failure",
+                "exit_code": 1
+              }
+            ],
+            "log_file": "/logs/c2.log"
+          }
+        ]
+      },
+      "previous_executions": [
+        {
+          "execution_id": 2,
+          "timestamp": "2025-08-30T15:00:00Z",
+          "duration_ms": 1800,
+          "status": "success",
+          "retries": 0,
+          "workspace_dir": "/ws",
+          "repository": null,
+          "jobs": []
+        },
+        {
+          "execution_id": 1,
+          "timestamp": "2025-08-30T10:00:00Z",
+          "duration_ms": 2200,
+          "status": "failure",
+          "retries": 0,
+          "workspace_dir": "/ws",
+          "repository": null,
+          "jobs": []
+        }
+      ]
+    },
+    {
+      "name": "p2",
+      "latest_execution": {
+        "execution_id": 2,
+        "timestamp": "2025-08-31T13:00:00Z",
+        "duration_ms": 3000,
+        "status": "success",
+        "retries": 0,
+        "workspace_dir": "/ws",
+        "repository": null,
+        "jobs": [
+          {
+            "name": "lint",
+            "latest_attempt": {
+              "timestamp": "2025-08-31T13:01:00Z",
+              "duration_ms": 100,
+              "status": "success",
+              "exit_code": 0
+            },
+            "previous_attempts": [
+              {
+                "timestamp": "2025-08-30T13:10:00Z",
+                "duration_ms": 90,
+                "status": "failure",
+                "exit_code": 2
+              }
+            ],
+            "log_file": "/logs/lint.log"
+          },
+          {
+            "name": "package",
+            "latest_attempt": {
+              "timestamp": "2025-08-31T13:02:00Z",
+              "duration_ms": 150,
+              "status": "success",
+              "exit_code": 0
+            },
+            "previous_attempts": [
+              {
+                "timestamp": "2025-08-30T13:20:00Z",
+                "duration_ms": 140,
+                "status": "success",
+                "exit_code": 0
+              }
+            ],
+            "log_file": "/logs/package.log"
+          }
+        ]
+      },
+      "previous_executions": [
+        {
+          "execution_id": 1,
+          "timestamp": "2025-08-30T13:00:00Z",
+          "duration_ms": 2500,
+          "status": "failure",
+          "retries": 0,
+          "workspace_dir": "/ws",
+          "repository": null,
+          "jobs": []
+        }
+      ]
+    },
+    {
+      "name": "p3",
+      "latest_execution": {
+        "execution_id": 3,
+        "timestamp": "2025-08-31T14:00:00Z",
+        "duration_ms": 500,
+        "status": "pending",
+        "retries": 0,
+        "workspace_dir": "/ws",
+        "repository": null,
+        "jobs": [
+          {
+            "name": "only",
+            "latest_attempt": {
+              "timestamp": "2025-08-31T14:01:00Z",
+              "duration_ms": 10,
+              "status": "pending",
+              "exit_code": null
+            },
+            "previous_attempts": [],
+            "log_file": "/logs/only.log"
+          }
+        ]
+      },
+      "previous_executions": []
+    }
+  ]
+}

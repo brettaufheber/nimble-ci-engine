@@ -1,0 +1,46 @@
+pipelines:
+  - name: p1
+    jobs:
+      - name: build
+        steps:
+          - echo build
+      - name: test
+        needs:
+          - build
+        steps:
+          - echo test
+      - name: deploy
+        needs:
+          - test
+          - test
+          - ghost
+        steps:
+          - echo deploy
+      - name: cycle1
+        needs:
+          - cycle2
+        steps:
+          - echo c1
+      - name: cycle2
+        needs:
+          - cycle1
+        steps:
+          - echo c2
+  - name: p2
+    needs:
+      - p1
+      - nope
+    jobs:
+      - name: lint
+        steps:
+          - echo lint
+      - name: package
+        steps:
+          - echo pkg
+  - name: p3
+    jobs:
+      - name: only
+        needs:
+          - only
+        steps:
+          - echo only

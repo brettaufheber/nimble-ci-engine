@@ -1,0 +1,15 @@
+variables:
+  FILE_ABS:
+    src: 'file://${TEST_RESOURCES_DIR}/file_abs.txt'
+  FILE_REL:
+    src: 'file:${TEST_REL_PATH_RESOURCES_DIR}/file_rel.txt'
+  FILE_SPACE:
+    src: 'file://${TEST_RESOURCES_DIR}/file with space.txt'
+  HTTP_FILE:
+    src: 'http://${HTTP_AUTHORITY}/http.txt'
+  SFTP_SSH_HOME:
+    tpl: 'env.TEST_RESOURCES_DIR'
+  SFTP_FILE:
+    src: 'sftp://${SFTP_AUTHORITY}/upload/sftp.txt'
+
+pipelines: [ ]

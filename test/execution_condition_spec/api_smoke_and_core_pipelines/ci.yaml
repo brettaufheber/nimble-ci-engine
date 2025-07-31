@@ -1,0 +1,118 @@
+variables:
+  REPO_URI: { tpl: 'env.TEST_REPO_URI' }
+  REPO_REF: main
+
+pipelines:
+  # producers (final states only)
+  - name: ok1
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: ok2
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: ok3
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: ok4
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: ok5
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: ok6
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: ok7
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: skip1
+    condition: 'never'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: failure1
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ "exit 1" ] } ]
+  - name: timeout1
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs:
+      - name: slow
+        restrictions:
+          timeout:
+            duration: "1 second"
+            termination_grace_period: "0 seconds"
+        steps: [ "sleep 10" ]
+  # core API semantics & helpers (pipeline level)
+  - name: always
+    condition: 'always'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: never
+    condition: 'never'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: all_ok
+    needs: [ ok1, ok2 ]
+    condition: 'needs_all(ok)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: all_done
+    needs: [ ok3, skip1 ]
+    condition: 'needs_all(done)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: all_active
+    needs: [ ok3, skip1 ]
+    condition: 'needs_all(active)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: any_fail_failure
+    needs: [ failure1, ok4, ok5 ]
+    condition: 'needs_any(fail)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: any_fail_timeout
+    needs: [ timeout1, ok4, ok5 ]
+    condition: 'needs_any(fail)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: any_fail_none
+    needs: [ ok6, ok7 ]
+    condition: 'needs_any(fail)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: all_skipped_true
+    needs: [ skip1 ]
+    condition: '( [ needs[] | select(.status == "skipped") ] | length ) == needs_total'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: all_final_pred
+    needs: [ ok1, failure1 ]
+    condition: 'needs_all(.status | IN("success", "failure", "timeout", "skipped"))'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  # default & empty-set semantics (pipeline)
+  - name: default_ok
+    needs: [ ok1 ]
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: default_skips_on_skipped
+    needs: [ ok1, skip1 ]
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: empty_needs_all_true
+    condition: 'needs_all(ok)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: empty_needs_any_false
+    condition: 'needs_any(ok)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: need_null_exists_check
+    condition: 'need("NO_SUCH_PIPELINE") == null'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]
+  - name: all_done_negative
+    needs: [ ok1, failure1 ]
+    condition: 'needs_all(done)'
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs: [ { name: unnamed, steps: [ ":" ] } ]

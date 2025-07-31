@@ -1,0 +1,97 @@
+variables:
+  REPO_URI: { tpl: 'env.TEST_REPO_URI' }
+  REPO_REF: main
+pipelines:
+  # suite js_ok: only success/skip producers; all job-level semantics (no failures/timeouts here)
+  - name: js_ok
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs:
+      # producers
+      - name: ok1
+        steps: [ ":" ]
+      - name: ok2
+        needs: [ ok1 ]
+        steps: [ ":" ]
+      - name: ok3
+        needs: [ ok2 ]
+        steps: [ ":" ]
+      - name: skip1
+        condition: 'never'
+        steps: [ ":" ]
+      # job-level scenarios mirroring API helpers
+      - name: always
+        condition: 'always'
+        steps: [ ":" ]
+      - name: never
+        condition: never
+        steps: [ ":" ]
+      - name: all_ok
+        needs: [ ok1, ok2 ]
+        condition: 'needs_all(ok)'
+        steps: [ ":" ]
+      - name: all_done
+        needs: [ ok3, skip1 ]
+        condition: 'needs_all(done)'
+        steps: [ ":" ]
+      - name: all_active
+        needs: [ ok3, skip1 ]
+        condition: 'needs_all(active)'
+        steps: [ ":" ]
+      - name: any_fail_none
+        needs: [ ok1, ok2 ]
+        condition: 'needs_any(fail)'
+        steps: [ ":" ]
+      # default and empty-set semantics at job level
+      - name: default_ok
+        needs: [ ok1 ]
+        steps: [ ":" ]
+      - name: default_skips_on_skipped
+        needs: [ ok1, skip1 ]
+        steps: [ ":" ]
+      - name: empty_needs_all_true
+        condition: 'needs_all(ok)'
+        steps: [ ":" ]
+      - name: empty_needs_any_false
+        condition: 'needs_any(ok)'
+        steps: [ ":" ]
+      # need($name) null handling (no such job)
+      - name: need_null_exists_check
+        condition: 'need("NO_SUCH_JOB") == null'
+        steps: [ ":" ]
+      # all-final predicate with success + skipped
+      - name: all_final_pred_ok
+        needs: [ ok1, skip1 ]
+        condition: 'needs_all(.status | IN("success", "failure", "timeout", "skipped"))'
+        steps: [ ":" ]
+  # suite js_fail: introduce a failure/timeout producer for job-level failure-based scenarios
+  - name: js_fail
+    repository: { uri: { tpl: '$vars.REPO_URI' }, ref: { tpl: '$vars.REPO_REF' } }
+    jobs:
+      - name: ok1
+        steps: [ ":" ]
+      - name: failure1
+        needs: [ ok1 ]
+        steps: [ "exit 1" ]
+      - name: timeout1
+        needs: [ ok1 ]
+        restrictions:
+          timeout:
+            duration: "1 second"
+            termination_grace_period: "0 seconds"
+        steps: [ "sleep 10" ]
+      - name: any_fail_failure
+        needs: [ failure1, ok1 ]
+        condition: 'needs_any(fail)'
+        steps: [ ":" ]
+      - name: any_fail_timeout
+        needs: [ timeout1, ok1 ]
+        condition: 'needs_any(fail)'
+        steps: [ ":" ]
+      - name: all_final_pred_fail
+        needs: [ ok1, failure1 ]
+        condition: 'needs_all(.status | IN("success", "failure", "timeout", "skipped"))'
+        steps: [ ":" ]
+      - name: all_done_negative
+        needs: [ ok1, failure1 ]
+        condition: 'needs_all(done)'
+        steps: [ ":" ]

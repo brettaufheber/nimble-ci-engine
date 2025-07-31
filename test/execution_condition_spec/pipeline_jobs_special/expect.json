@@ -1,0 +1,26 @@
+{
+  "pipelines": {
+    "build": "success",
+    "build_fail": "failure"
+  },
+  "jobs": {
+    "build": {
+      "before_all": "success",
+      "compile": "success",
+      "test": "success",
+      "package": "success",
+      "on_success": "success",
+      "on_failure": "skipped",
+      "after_all": "success"
+    },
+    "build_fail": {
+      "before_all": "success",
+      "compile": "success",
+      "test": "failure",
+      "package": "skipped",
+      "on_success": "skipped",
+      "on_failure": "success",
+      "after_all": "success"
+    }
+  }
+}

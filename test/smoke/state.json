@@ -1,0 +1,70 @@
+{
+  "pipelines": [
+    {
+      "name": "library",
+      "latest_execution": {
+        "execution_id": 3,
+        "timestamp": "2025-05-07T12:00:00Z",
+        "duration_ms": 125000,
+        "status": "success",
+        "retries": 0,
+        "workspace_dir": "/opt/ci/workspaces/library",
+        "repository": {
+          "uri": "https://github.com/jenkinsci/git-plugin.git",
+          "commit_hash": "abc123def4567890abcdef1234567890abcdef12"
+        },
+        "jobs": [
+          {
+            "name": "build",
+            "timestamp": "2025-05-07T12:00:00Z",
+            "duration_ms": 125000,
+            "status": "success",
+            "exit_code": 42,
+            "log_file": "/foo/bar.log"
+          },
+          {
+            "name": "test",
+            "timestamp": "2025-05-07T12:00:00Z",
+            "duration_ms": 125000,
+            "status": "success",
+            "exit_code": 42,
+            "log_file": "/foo/bar.log"
+          }
+        ]
+      }
+    },
+    {
+      "name": "application",
+      "latest_execution": {
+        "execution_id": 5,
+        "timestamp": "2025-05-08T14:30:00Z",
+        "duration_ms": 125000,
+        "status": "failure",
+        "retries": 1,
+        "workspace_dir": "/opt/ci/workspaces/application",
+        "repository": {
+          "uri": "https://github.com/jenkinsci/git-plugin.git",
+          "commit_hash": "abc123def4567890abcdef1234567890abcdef12"
+        },
+        "jobs": [
+          {
+            "name": "build",
+            "timestamp": "2025-05-07T12:00:00Z",
+            "duration_ms": 125000,
+            "status": "success",
+            "exit_code": 42,
+            "log_file": "/foo/bar.log"
+          },
+          {
+            "name": "test",
+            "timestamp": "2025-05-07T12:00:00Z",
+            "duration_ms": 125000,
+            "status": "success",
+            "exit_code": 42,
+            "log_file": "/foo/bar.log"
+          }
+        ]
+      }
+    }
+  ]
+}

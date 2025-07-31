@@ -1,0 +1,23 @@
+{
+  "host": [
+    "./extensions/job_executors/host.sh",
+    "${EXPRESSION}",
+    "${BASE_TIMESTAMP}",
+    "${TIMEZONE}",
+    "${JITTER}"
+  ],
+  "docker": [
+    "./extensions/job_executors/docker.sh",
+    "${EXPRESSION}",
+    "${BASE_TIMESTAMP}",
+    "${TIMEZONE}",
+    "${JITTER}"
+  ],
+  "lxd": [
+    "./extensions/job_executors/lxd.sh",
+    "${EXPRESSION}",
+    "${BASE_TIMESTAMP}",
+    "${TIMEZONE}",
+    "${JITTER}"
+  ]
+}

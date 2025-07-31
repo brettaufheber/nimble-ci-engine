@@ -1,0 +1,43 @@
+# Scenario S10-j — Two-chain fork DAG; using jobs in a single pipeline
+# Shape: A -> (M -> X, N -> Y)
+# Expectation:
+#   • Job A runs first.
+#   • After A, jobs M and N may run in parallel (job slots allow it).
+#   • X waits for M; Y waits for N.
+
+variables:
+  MAX_CONCURRENT_PIPELINES: "0"
+  MAX_CONCURRENT_JOBS_PER_PIPELINE: "0"
+  TEST_COMMAND: { tpl: '"\(env.TEST_DIR)/concurrency_probe.sh"' }
+  INSTALL_DIR: { tpl: 'env.INSTALL_DIR' }
+  CI_CONFIG_FILE: { tpl: '"\(env.TEST_RESOURCES_DIR)/ci.yaml"' }
+  STATE_FILE: { tpl: 'env.STATE_FILE' }
+  JQ_MODULE_PATH: { tpl: 'env.JQ_MODULE_PATH' }
+  SCHEMA_BASE_URI: { tpl: 'env.SCHEMA_BASE_URI' }
+  SLEEP: "0.01"
+concurrency:
+  max_parallel_pipelines: { tpl: '$vars.MAX_CONCURRENT_PIPELINES | tonumber' }
+  max_parallel_jobs_per_pipeline: { tpl: '$vars.MAX_CONCURRENT_JOBS_PER_PIPELINE | tonumber' }
+pipelines:
+  - name: P1
+    jobs:
+      - name: A
+        needs: [ ]
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+      - name: M
+        needs: [ A ]
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+      - name: X
+        needs: [ M ]
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+      - name: N
+        needs: [ A ]
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+      - name: Y
+        needs: [ N ]
+        steps:
+          - tpl: '$vars.TEST_COMMAND'

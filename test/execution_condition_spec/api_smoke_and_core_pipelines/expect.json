@@ -1,0 +1,30 @@
+{
+  "pipelines": {
+    "ok1": "success",
+    "ok2": "success",
+    "ok3": "success",
+    "ok4": "success",
+    "ok5": "success",
+    "ok6": "success",
+    "ok7": "success",
+    "skip1": "skipped",
+    "failure1": "failure",
+    "timeout1": "timeout",
+    "always": "success",
+    "never": "skipped",
+    "all_ok": "success",
+    "all_done": "success",
+    "all_active": "skipped",
+    "any_fail_failure": "success",
+    "any_fail_timeout": "success",
+    "any_fail_none": "skipped",
+    "all_skipped_true": "success",
+    "all_final_pred": "success",
+    "default_ok": "success",
+    "default_skips_on_skipped": "skipped",
+    "empty_needs_all_true": "success",
+    "empty_needs_any_false": "skipped",
+    "need_null_exists_check": "success",
+    "all_done_negative": "skipped"
+  }
+}

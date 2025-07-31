@@ -1,0 +1,150 @@
+pipelines:
+
+  - name: project-alpha
+    repository:
+      uri: "https://example/repos/alpha.git"
+      ref: "main"
+    jobs:
+      - name: build
+        steps:
+          - "make all"
+          - "make test"
+
+  - name: project-bravo
+    needs:
+      - project-alpha
+    repository:
+      uri: "https://example/repos/bravo.git"
+      ref: "develop"
+    jobs:
+      - name: setup
+        steps:
+          - "install dependencies"
+          - "setup environment"
+      - name: test
+        needs:
+          - setup
+        steps:
+          - "run unit tests"
+
+  - name: project-charlie
+    needs:
+      - project-alpha
+      - project-bravo
+    repository:
+      uri: "https://example/repos/charlie.git"
+      ref: "release"
+    jobs:
+      - name: deploy
+        needs:
+          - project-bravo
+        condition: "branch == 'release'"
+        steps:
+          - "deploy to staging"
+      - name: cleanup
+        steps:
+          - "remove temp files"
+
+  - name: project-delta
+    repository:
+      uri: "https://example/repos/delta.git"
+      ref: "main"
+    jobs:
+      - name: job1
+        steps:
+          - "echo hello"
+      - name: job2
+        needs: []
+        steps:
+          - "echo world"
+
+  - name: project-echo
+    needs:
+      - project-charlie
+    repository:
+      uri: "https://example/repos/echo.git"
+      ref: "main"
+    jobs:
+      - name: integrate
+        needs:
+          - build
+          - project-alpha
+        steps:
+          - "integrate modules"
+      - name: verify
+        needs:
+          - integrate
+        steps:
+          - "run integration tests"
+
+  - name: project-foxtrot
+    repository:
+      uri: "https://example/repos/foxtrot.git"
+      ref: "develop"
+    jobs:
+      - name: analyze
+        steps:
+          - "run static analysis"
+
+  - name: project-golf
+    needs:
+      - project-alpha
+      - project-charlie
+      - project-echo
+    repository:
+      uri: "https://example/repos/golf.git"
+      ref: "main"
+    jobs:
+      - name: release
+        condition: "tag =~ /^v\\d+\\.\\d+\\.\\d+$/"
+        steps:
+          - "package release"
+          - "upload artifacts"
+
+  - name: project-hotel
+    repository:
+      uri: "https://example/repos/hotel.git"
+      ref: "main"
+    jobs:
+      - name: docs
+        steps:
+          - "generate docs"
+          - "publish docs"
+
+  - name: project-india
+    needs: []
+    repository:
+      uri: "https://example/repos/india.git"
+      ref: "develop"
+    jobs:
+      - name: trivial
+        needs: []
+        steps:
+          - "echo trivial"
+
+  - name: project-juliet
+    needs:
+      - project-hotel
+    repository:
+      uri: "https://example/repos/juliet.git"
+      ref: "release"
+    jobs:
+      - name: A
+        steps:
+          - "step A1"
+          - "step A2"
+      - name: B
+        needs:
+          - A
+        steps:
+          - "step B1"
+      - name: C
+        needs:
+          - A
+          - B
+        steps:
+          - "step C1"
+          - "step C2"
+      - name: D
+        steps:
+          - "step D1"

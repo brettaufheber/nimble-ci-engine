@@ -1,0 +1,51 @@
+# Scenario S10-p — Two-chain fork DAG; using pipelines
+# Shape: A -> (M -> X, N -> Y)
+# Expectation:
+#   • Pipeline A runs first.
+#   • After A, pipelines M and N may run in parallel.
+#   • X waits for M; Y waits for N. X and Y may overlap if their parents finish around the same time.
+
+variables:
+  MAX_CONCURRENT_PIPELINES: "0"
+  MAX_CONCURRENT_JOBS_PER_PIPELINE: "0"
+  TEST_COMMAND: { tpl: '"\(env.TEST_DIR)/concurrency_probe.sh"' }
+  INSTALL_DIR: { tpl: 'env.INSTALL_DIR' }
+  CI_CONFIG_FILE: { tpl: '"\(env.TEST_RESOURCES_DIR)/ci.yaml"' }
+  STATE_FILE: { tpl: 'env.STATE_FILE' }
+  JQ_MODULE_PATH: { tpl: 'env.JQ_MODULE_PATH' }
+  SCHEMA_BASE_URI: { tpl: 'env.SCHEMA_BASE_URI' }
+  SLEEP: "0.01"
+concurrency:
+  max_parallel_pipelines: { tpl: '$vars.MAX_CONCURRENT_PIPELINES | tonumber' }
+  max_parallel_jobs_per_pipeline: { tpl: '$vars.MAX_CONCURRENT_JOBS_PER_PIPELINE | tonumber' }
+pipelines:
+  - name: A
+    needs: [ ]
+    jobs:
+      - name: A
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: M
+    needs: [ A ]
+    jobs:
+      - name: M
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: X
+    needs: [ M ]
+    jobs:
+      - name: X
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: N
+    needs: [ A ]
+    jobs:
+      - name: N
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: Y
+    needs: [ N ]
+    jobs:
+      - name: Y
+        steps:
+          - tpl: '$vars.TEST_COMMAND'

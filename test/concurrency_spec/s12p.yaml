@@ -1,0 +1,69 @@
+# Scenario S12-p — Chain → fan-out(4) → join → chain DAG; using pipelines
+# Shape: A -> B -> (C1, C2, C3, C4) -> D -> E
+# Expectation:
+#   • A then B (strict).
+#   • After B, C1..C4 may run in parallel (up to 4).
+#   • D waits for all C*, then E waits for D.
+
+variables:
+  MAX_CONCURRENT_PIPELINES: "0"
+  MAX_CONCURRENT_JOBS_PER_PIPELINE: "0"
+  TEST_COMMAND: { tpl: '"\(env.TEST_DIR)/concurrency_probe.sh"' }
+  INSTALL_DIR: { tpl: 'env.INSTALL_DIR' }
+  CI_CONFIG_FILE: { tpl: '"\(env.TEST_RESOURCES_DIR)/ci.yaml"' }
+  STATE_FILE: { tpl: 'env.STATE_FILE' }
+  JQ_MODULE_PATH: { tpl: 'env.JQ_MODULE_PATH' }
+  SCHEMA_BASE_URI: { tpl: 'env.SCHEMA_BASE_URI' }
+  SLEEP: "0.01"
+concurrency:
+  max_parallel_pipelines: { tpl: '$vars.MAX_CONCURRENT_PIPELINES | tonumber' }
+  max_parallel_jobs_per_pipeline: { tpl: '$vars.MAX_CONCURRENT_JOBS_PER_PIPELINE | tonumber' }
+pipelines:
+  - name: A
+    needs: [ ]
+    jobs:
+      - name: A
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: B
+    needs: [ A ]
+    jobs:
+      - name: B
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: C1
+    needs: [ B ]
+    jobs:
+      - name: C1
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: C2
+    needs: [ B ]
+    jobs:
+      - name: C2
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: C3
+    needs: [ B ]
+    jobs:
+      - name: C3
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: C4
+    needs: [ B ]
+    jobs:
+      - name: C4
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: D
+    needs: [ C1, C2, C3, C4 ]
+    jobs:
+      - name: D
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
+  - name: E
+    needs: [ D ]
+    jobs:
+      - name: E
+        steps:
+          - tpl: '$vars.TEST_COMMAND'
