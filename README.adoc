@@ -1,1 +1,37 @@
 = NimbleCI
+
+== License
+
+Copyright (c) 2025 Eric Löffler
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program.
+If not, see _http://www.gnu.org/licenses/_.
+
+=== Additional Permission (User Data) — GPLv3 §7
+
+This permission clarifies that *user-supplied runtime data* consumed or produced by the Program (e.g., configuration values, presets created by users) is treated as *user data*, not as a derivative work of the Program, and may be licensed under terms of the user's choice.
+
+This permission does *not* apply to any files that are intended to be compiled, linked, or interpreted as part of the Program (for example: code modules, scripts executed in the Program’s address space, or templates that embed substantial Program code), nor to any files *distributed with this repository* (including examples, presets, and JSON Schema definitions).
+
+=== Additional Permission (Linking for Extensions/Plugins) — GPLv3 §7
+
+You may develop, use, link, and distribute independent modules (“Plugins” or “Extensions”) that communicate only via the Program’s published, stable plugin interfaces or inter-process mechanisms, and copy or distribute the resulting executable or object code (“Combined Work”) under terms of your choice, provided that *all* the following conditions are met:
+
+1. The module is an independent work, does not incorporate substantial portions of the Program’s source code, and is not a modified version of this Program or a work based on the Program.
+2. Distribution of the Program itself (and any modifications to it) remains under the GPL.
+This permission does not grant additional rights to the Program’s *source code*.
+
+For the avoidance of doubt, this permission applies only to the resulting executable/object code and does not alter any GPL obligations for the Program’s source.
+Distribution of any Combined Work must not restrict recipients’ GPL rights with respect to the Program.
+
+=== General Provisions (apply to this notice)
+
+You may extend or remove these §7 permissions in your modified versions of the Program, but you are not obligated to do so.
+
+No trademark or patent rights are granted by this notice.
+If any clause of these permissions is held unenforceable, the rest remains in effect.
